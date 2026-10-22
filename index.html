@@ -62,8 +62,6 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .btn.red{background:var(--red);box-shadow:0 4px 0 var(--red-deep)}
 .btn[disabled]{background:var(--surface-2);color:var(--ink-3);box-shadow:0 4px 0 var(--line);cursor:not-allowed}
 .btn.block{width:100%}
-.gbtn{text-transform:none;letter-spacing:0;font-weight:700;font-size:16px}
-.gbtn svg{width:20px;height:20px;flex:none}
 .veil{position:fixed;inset:0;background:rgba(10,12,18,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--surface);width:100%;max-width:560px;border-radius:26px 26px 0 0;padding:22px max(20px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out;max-height:90vh;overflow-y:auto}
 @media (min-width:640px){.veil{align-items:center}.sheet{border-radius:26px}}
@@ -84,9 +82,6 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .lede{font-size:clamp(17px,2vw,20px);color:var(--ink-2);max-width:44ch;margin:20px 0 28px}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .who{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px;color:var(--ink-2);min-height:28px}
-.who img,.who .av{width:28px;height:28px;border-radius:50%;flex:none}
-.who .av{display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:13px}
-.who button{color:var(--blue);font-weight:700;font-size:14px;padding:0}
 /* deck */
 .deck{position:relative;height:340px;max-width:380px;width:100%;justify-self:center}
 .deck .bg{position:absolute;inset:0;border-radius:28px;border:2px solid var(--line);background:var(--surface)}
@@ -126,13 +121,10 @@ footer{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);padding-top:4
       <h1>A thousand words, <em>un pas</em> at a time.</h1>
       <p class="lede">The 1,500 words and 32 grammar lessons you need to go from your first <i>bonjour</i> to a solid A2. Five minutes a day, with flashcards, streaks and spaced review.</p>
       <div class="ctas">
-        <button class="btn gbtn" id="gsign" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3zM12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22zM6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9zM12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5L6.4 10C7.2 7.7 9.4 5.9 12 5.9z" opacity=".95"/></svg>
-          <span>Continue with Google</span></button>
-        <a class="btn ghost" id="guest" href="app.html">Start without an account</a>
+        <a class="btn" id="go" href="app.html">Start learning</a>
+        <a class="btn ghost" href="app.html#grammar">Browse the grammar</a>
       </div>
-      <div class="who" id="who"><span>Progress is saved on this device. Sign in to keep it on every device.</span></div>
-      <div id="msg"></div>
+      <div class="who" id="who"><span>Free, no account needed. Your progress is saved in this browser.</span></div>
     </div>
 
     <div class="deck" aria-label="Sample flashcard">
@@ -150,10 +142,10 @@ footer{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);padding-top:4
   <section class="facts">
     <div><b>1,500</b><span>most useful words, in 15 themed units from greetings to the environment</span></div>
     <div><b>32</b><span>grammar lessons, from <i>le / la</i> to the conditional and relative pronouns</span></div>
-    <div><b>A1 → A2</b><span>a CEFR path with hearts, streaks and a spaced-review system that brings back what you forget</span></div>
+    <div><b>A1 → A2</b><span>a CEFR path with hearts, streaks and spaced review that brings back what you forget</span></div>
   </section>
 
-  <footer><span>mille mots · français pour tous</span><span>no ads · no tracking · your progress, your account</span></footer>
+  <footer><span>mille mots · français pour tous</span><span>no ads · no account · no tracking</span></footer>
 </div>
 
 <script>
@@ -163,23 +155,10 @@ function show(){const d=DEMO[k];document.getElementById('art').textContent=d[0]?
 function tap(){if(flip.classList.contains('on')){flip.classList.remove('on');setTimeout(()=>{k=(k+1)%DEMO.length;show()},280)}else{flip.classList.add('on')}}
 flip.addEventListener('click',tap);flip.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tap()}});show();
 
-const $=s=>document.getElementById(s);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let SYNC=null;
-function who(u){
-  if(u){$('gsign').hidden=true;$('guest').textContent='Open my dashboard';$('guest').className='btn';
-    const pic=u.photo?`<img src="${esc(u.photo)}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${esc((u.name||u.email||'?')[0].toUpperCase())}</span>`;
-    $('who').innerHTML=`${pic}<span>Signed in as <b>${esc(u.name||u.email)}</b> · </span><button id="out">Sign out</button>`;
-    $('out').onclick=()=>SYNC&&SYNC.signOut();}
-  else{if(SYNC&&SYNC.configured())$('gsign').hidden=false;$('guest').textContent='Start without an account';$('guest').className='btn ghost';
-    $('who').innerHTML='<span>Progress is saved on this device. Sign in to keep it on every device.</span>';}
-}
-import('./sync.js').then(async m=>{SYNC=m;if(!m.configured())return;$('gsign').hidden=false;
-  const r=await m.init(who);if(!r.ok){$('gsign').hidden=true;$('msg').innerHTML='<p class="err">Sign-in is not reachable right now. You can still learn: your progress stays on this device.</p>';}
-}).catch(()=>{});
-$('gsign').addEventListener('click',async()=>{$('msg').innerHTML='';try{await SYNC.signIn();location.href='app.html';}catch(e){
-  const c=(e&&e.code)||'';if(/popup-closed|cancelled/.test(c))return;
-  $('msg').innerHTML=`<p class="err">Sign-in didn't work${c?' ('+esc(c)+')':''}. Check that this domain is listed under Authentication → Settings → Authorized domains in Firebase.</p>`;}});
+try{const st=JSON.parse(localStorage.getItem('millemots.v1')||'null');
+  if(st&&st.words&&Object.keys(st.words).length){const n=Object.keys(st.words).length;
+    document.getElementById('go').textContent='Continue learning';
+    document.getElementById('who').innerHTML=`<span>Welcome back: <b>${n}</b> words seen · <b>${st.xp||0}</b> XP${st.streak?` · ${st.streak}-day streak`:''}</span>`;}}catch(e){}
 </script>
 </body>
 </html>

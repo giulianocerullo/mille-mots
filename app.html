@@ -61,8 +61,6 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .btn.red{background:var(--red);box-shadow:0 4px 0 var(--red-deep)}
 .btn[disabled]{background:var(--surface-2);color:var(--ink-3);box-shadow:0 4px 0 var(--line);cursor:not-allowed}
 .btn.block{width:100%}
-.gbtn{text-transform:none;letter-spacing:0;font-weight:700;font-size:16px}
-.gbtn svg{width:20px;height:20px;flex:none}
 .veil{position:fixed;inset:0;background:rgba(10,12,18,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--surface);width:100%;max-width:560px;border-radius:26px 26px 0 0;padding:22px max(20px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out;max-height:90vh;overflow-y:auto}
 @media (min-width:640px){.veil{align-items:center}.sheet{border-radius:26px}}
@@ -77,11 +75,6 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .chips{display:flex;gap:6px;align-items:center}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-mono);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
 .chip.fire{color:var(--gold)} .chip.xp{color:var(--blue)} .chip.hp{color:var(--red)} .chip.off{color:var(--ink-3)}
-.acct{width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;position:relative;flex:none;overflow:visible;color:var(--ink-2)}
-.acct img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-.acct .ini{font-weight:800;color:var(--blue);font-size:14px}
-.acct .dot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg);background:var(--ink-3)}
-.acct .dot.synced{background:var(--green)} .acct .dot.pending{background:var(--gold)} .acct .dot.error{background:var(--red)}
 @media (max-width:420px){.brand>span:last-child{display:none}.chip{padding:5px 8px}}
 nav.dots{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-block:4px 16px}
 nav.dots::-webkit-scrollbar{display:none}
@@ -257,9 +250,8 @@ table.gt{border-collapse:separate;border-spacing:0;width:100%;font-size:15px;bac
 .seg{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:12px}
 .seg button{padding:6px 12px;border-radius:9px;font-weight:700;font-size:14px;font-family:var(--f-mono)}
 .seg button.on{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.acc-head{display:flex;align-items:center;gap:12px}
-.acc-head img,.acc-head .av{width:48px;height:48px;border-radius:50%;flex:none}
-.acc-head .av{display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:20px}
+.bk{display:flex;gap:10px;flex-wrap:wrap}
+.bk .btn{flex:1 1 200px}
 footer.foot-note{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);text-align:center;padding-top:32px}
 </style>
 </head>
@@ -2456,7 +2448,7 @@ const today=()=>dkey(new Date());
 const dd=(a,b)=>Math.round((new Date(b+'T12:00')-new Date(a+'T12:00'))/864e5);
 const HMAX=5,HREG=20*60*1000,DAY=864e5,INT=[0,1,2,4,8,16];
 function localSave(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function save(){localSave();if(SYNC.user)schedulePush();}
+function save(){localSave();}
 function checkStreak(){if(S.last&&dd(S.last,today())>1&&S.streak){S.streak=0;}}
 checkStreak();
 function regen(){if(S.hearts>=HMAX){S.hts=Date.now();return;}const n=Math.floor((Date.now()-S.hts)/HREG);if(n>0){S.hearts=Math.min(HMAX,S.hearts+n);S.hts+=n*HREG;if(S.hearts>=HMAX)S.hts=Date.now();localSave();}}
@@ -2471,8 +2463,9 @@ const unlocked=n=>S.free||n.idx===0||!!S.done[NODES[n.idx-1].id];
 const curNode=()=>NODES.find(n=>!S.done[n.id]&&unlocked(n));
 const dueWords=()=>WORDS.filter(w=>{const r=rec(w);return r&&r.d<=Date.now()});
 
-/* ---------- account sync ---------- */
-const SYNC={mod:null,ready:false,cfg:false,user:null,state:'local',at:0,timer:null,err:''};
+/* ---------- local storage & backup ---------- */
+let PERSIST=null;
+try{if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(p=>p||navigator.storage.persist()).then(p=>{PERSIST=p;if(VIEW==='profile'&&!SS)render();}).catch(()=>{});}}catch(e){}
 function mergeState(a,b){const r=Object.assign(fresh(),a);
   const mx=(x,y)=>Math.max(x||0,y||0);
   r.days=Object.assign({},a.days);for(const k in (b.days||{}))r.days[k]=mx(r.days[k],b.days[k]);
@@ -2485,14 +2478,6 @@ function mergeState(a,b){const r=Object.assign(fresh(),a);
   const la=a.last||'',lb=b.last||'';if(lb>la){r.last=b.last;r.streak=b.streak||0;}else if(la===lb){r.streak=mx(a.streak,b.streak);}
   r.best=Math.max(r.best,r.streak);
   return r;}
-function schedulePush(){clearTimeout(SYNC.timer);SYNC.state='pending';paintAccount();SYNC.timer=setTimeout(doPush,1500);}
-async function doPush(){if(!SYNC.user)return;try{await SYNC.mod.push(SYNC.user.uid,S);SYNC.state='synced';SYNC.at=Date.now();SYNC.err='';}catch(e){SYNC.state='error';SYNC.err=(e&&e.code)||'';}paintAccount();}
-async function pullMerge(){if(!SYNC.user)return;try{const r=await SYNC.mod.pull(SYNC.user.uid);if(r){S=mergeState(S,r);checkStreak();localSave();}await SYNC.mod.push(SYNC.user.uid,S);SYNC.state='synced';SYNC.at=Date.now();SYNC.err='';}catch(e){SYNC.state='error';SYNC.err=(e&&e.code)||'';}}
-async function onUser(u){SYNC.user=u;
-  if(u){SYNC.state='pending';paintAccount();await pullMerge();if(!SS)render();else paintAccount();}
-  else{SYNC.state='local';if(!SS)render();}}
-import('./sync.js').then(async m=>{SYNC.mod=m;SYNC.cfg=m.configured();if(!SYNC.cfg){paintAccount();return;}const r=await m.init(onUser);SYNC.ready=r.ok;paintAccount();}).catch(()=>{});
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&SYNC.user&&!SS){await pullMerge();render();}});
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
@@ -2509,8 +2494,6 @@ const I={
  star:'<svg class="ico" viewBox="0 0 24 24"><path d="m12 2.5 2.9 6.2 6.6.6-5 4.5 1.5 6.6L12 17l-6 3.4 1.5-6.6-5-4.5 6.6-.6z"/></svg>',
  x:'<svg class="ico" viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6 10.6 12 5 6.4z"/></svg>',
  play:'<svg class="ico" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>',
- user:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg>',
- g:'<svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3zM12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22zM6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9zM12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5L6.4 10C7.2 7.7 9.4 5.9 12 5.9z"/></svg>'
 };
 const stars=(n)=>`<span class="stars" aria-label="${n} of 3 stars">${[0,1,2].map(i=>`<span class="${i<n?'':'e'}">${I.star}</span>`).join('')}</span>`;
 
@@ -2527,20 +2510,15 @@ let VIEW=(location.hash||'').slice(1); if(!VIEWS.some(v=>v[0]===VIEW)) VIEW='lea
 let GOPEN=null, WQ='', WU='all', RESETARM=false;
 function go(v){VIEW=v;GOPEN=null;try{history.replaceState(null,'','#'+v)}catch(e){}render();window.scrollTo(0,0)}
 
-function acctInner(){const u=SYNC.user;const dot=`<span class="dot ${u?SYNC.state:''}"></span>`;
-  if(u)return (u.photo?`<img src="${esc(u.photo)}" alt="" referrerpolicy="no-referrer">`:`<span class="ini">${esc((u.name||u.email||'?')[0].toUpperCase())}</span>`)+dot;
-  return I.user+dot;}
-function paintAccount(){const a=$('#acct');if(a)a.innerHTML=acctInner();const s=$('#acctsheet');if(s)s.innerHTML=acctSheet();}
 function header(){regen();const hp=S.hearts;
   let next='';if(hp<HMAX){const m=Math.ceil((HREG-(Date.now()-S.hts))/60000);next=` title="Next heart in ${m} min"`;}
   return `<header class="top"><a class="brand" href="index.html"><span class="mark">m<i></i></span><span>mille mots<small>français · A1 → A2</small></span></a>
-  <div class="chips"><span class="chip fire ${S.streak?'':'off'}" title="Day streak">${I.fire}${S.streak}</span><span class="chip xp" title="Total XP">${I.bolt}${S.xp}</span><span class="chip hp"${next}>${I.heart}${hp}</span>
-  <button class="acct" id="acct" data-act="account" aria-label="Account">${acctInner()}</button></div></header>
+  <div class="chips"><span class="chip fire ${S.streak?'':'off'}" title="Day streak">${I.fire}${S.streak}</span><span class="chip xp" title="Total XP">${I.bolt}${S.xp}</span><span class="chip hp"${next}>${I.heart}${hp}</span></div></header>
   <nav class="dots" aria-label="Sections">${VIEWS.map(([k,l])=>`<button data-act="go" data-v="${k}" class="${VIEW===k?'on':''}">${l}</button>`).join('')}</nav>`;}
 
 function render(){
   const body={learn:vLearn,review:vReview,grammar:vGram,words:vWords,profile:vProfile}[VIEW]();
-  $('#app').innerHTML=header()+body+`<footer class="foot-note">mille mots · ${WORDS.length} words · ${GR.length} grammar lessons</footer>`;
+  $('#app').innerHTML=header()+body+`<footer class="foot-note">mille mots · ${WORDS.length} words · ${GR.length} grammar lessons · progress saved in this browser</footer>`;
 }
 function greeting(){const h=new Date().getHours();return h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';}
 function wotd(){let h=0;for(const c of today())h=(h*31+c.charCodeAt(0))>>>0;return WORDS[h%WORDS.length];}
@@ -2639,13 +2617,31 @@ function vProfile(){const lv=level(),w=wotd();
   <div class="card"><span class="eyebrow">grammar</span><b>${lv.G}/${GR.length}</b></div></div></section>
   <section><h2>This week</h2><div class="card">${weekChart()}</div></section>
   <section><div class="sechead"><h2>Achievements</h2><span class="eyebrow">${BADGES.filter(b=>b[3]()).length}/${BADGES.length}</span></div><div class="badges">${BADGES.map(b=>{const on=b[3]();return `<div class="card badge ${on?'':'no'}"><span class="medal">${b[0]}</span><b>${b[1]}</b><small>${b[2]}</small></div>`}).join('')}</div></section>
+  <section><div class="sechead"><h2>Backup</h2><span class="eyebrow">${S.lastBackup?'last backup '+agoText(S.lastBackup):'no backup yet'}</span></div><div class="card" style="display:flex;flex-direction:column;gap:12px">
+  <p class="muted" style="margin:0;font-size:15px">Your progress lives in this browser on this device. Save a backup file now and then, and use it to move your progress to another device or browser. Restoring merges the file with what is already here, so nothing gets lost.</p>
+  <div class="bk"><button class="btn" data-act="export">Save backup file</button><button class="btn ghost" data-act="import">Restore from file</button></div>
+  <input type="file" id="importfile" accept="application/json,.json" hidden>
+  <div id="bkmsg"></div>
+  <p class="eyebrow" style="margin:0">${PERSIST===true?'storage: protected, the browser will not clear it on its own':PERSIST===false?'storage: standard, the browser may clear it if space runs low':'storage: checking…'}</p></div></section>
   <section><h2>Settings</h2><div class="card" style="padding-block:4px">
   <div class="set"><div><b>Sound effects</b><div class="muted" style="font-size:14px">A chime for right and wrong answers</div></div><button class="tog ${S.sound?'on':''}" data-act="tsound" aria-label="Sound effects" aria-pressed="${S.sound}"></button></div>
   <div class="set"><div><b>Free exploration</b><div class="muted" style="font-size:14px">Unlock every step of the path</div></div><button class="tog ${S.free?'on':''}" data-act="tfree" aria-label="Free exploration" aria-pressed="${S.free}"></button></div>
   <div class="set"><div><b>Daily goal</b><div class="muted" style="font-size:14px">XP per day</div></div><div class="seg">${[20,50,100].map(g=>`<button class="${S.goal===g?'on':''}" data-act="goal" data-g="${g}">${g}</button>`).join('')}</div></div>
-  <div class="set"><div><b>Reset progress</b><div class="muted" style="font-size:14px">${RESETARM?'Tap again to confirm. This cannot be undone'+(SYNC.user?', and it also clears your account.':'.'):'Erase XP, streaks and learned words'}</div></div><button class="btn ${RESETARM?'red':'ghost'}" style="padding:10px 16px;font-size:13px" data-act="reset">${RESETARM?'Confirm':'Reset'}</button></div>
+  <div class="set"><div><b>Reset progress</b><div class="muted" style="font-size:14px">${RESETARM?'Tap again to confirm. This cannot be undone.':'Erase XP, streaks and learned words'}</div></div><button class="btn ${RESETARM?'red':'ghost'}" style="padding:10px 16px;font-size:13px" data-act="reset">${RESETARM?'Confirm':'Reset'}</button></div>
   </div></section>
   <section><div class="card" style="font-size:14px"><b>How it works</b><p class="muted" style="margin:6px 0 0">${UNITS.length} units and ${NODES.length} steps. Each vocabulary step teaches 10 words with flashcards, then tests them with multiple choice, listening, typing and matching. Steps with a book icon are grammar. Each mistake costs a heart; hearts refill on their own (one every 20 minutes) or with a review session.</p></div></section>`;}
+
+function agoText(t){const d=Math.floor((Date.now()-t)/DAY);return d<=0?'today':d===1?'yesterday':d+' days ago';}
+function exportBackup(){const data=JSON.stringify(Object.assign({app:'mille-mots',exported:new Date().toISOString()},S),null,0);
+  const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='mille-mots-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  S.lastBackup=Date.now();localSave();render();const m=$('#bkmsg');if(m)m.innerHTML=`<p class="note" style="margin:0">Backup saved as <span class="mono">mille-mots-backup-${today()}.json</span> in your downloads.</p>`;}
+function importBackup(file){const r=new FileReader();r.onload=()=>{const m=()=>$('#bkmsg');try{const d=JSON.parse(r.result);
+    if(!d||typeof d!=='object'||!d.words||typeof d.xp!=='number')throw new Error('format');
+    const beforeSeen=seenN();S=mergeState(S,d);checkStreak();localSave();render();
+    const el=m();if(el)el.innerHTML=`<p class="note" style="margin:0">Backup restored. ${seenN()} words seen (${Math.max(0,seenN()-beforeSeen)} new on this device), ${S.xp} XP.</p>`;}
+  catch(e){const el=m();if(el)el.innerHTML=`<p class="err" style="margin:0">This file isn't a Mille Mots backup. Choose a file named like <span class="mono">mille-mots-backup-….json</span>.</p>`;}};
+  r.readAsText(file);}
 
 /* ---------- sheets ---------- */
 function openVeil(inner,id){closeSheet();const v=document.createElement('div');v.className='veil';v.dataset.act='closesheet';v.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" ${id?`id="${id}"`:''}>${inner}</div>`;document.body.appendChild(v);}
@@ -2655,20 +2651,6 @@ function openNode(n){const ul=unlocked(n),d=S.done[n.id];
   openVeil(`<div class="sechead"><span class="eyebrow">./unit ${n.unit+1} · ${n.kind==='v'?'vocabulary · '+n.words.length+' words':'grammar · '+GR[n.g].lvl}</span>${d?stars(d.stars):''}</div>
   <h3>${esc(n.title)}${n.part?' · '+n.part:''}</h3>${inner}
   ${ul?`<button class="btn block" data-act="start" data-id="${n.id}">${d?'Practise again':n.kind==='g'?'Open lesson':'Start'}</button>`:`<button class="btn block" disabled>${I.lock} Finish the previous step first</button>`}`);}
-function acctSheet(){const u=SYNC.user;
-  if(u){const st={synced:'Synced'+(SYNC.at?' · '+new Date(SYNC.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''),pending:'Saving…',error:'Could not sync'+(SYNC.err?' ('+esc(SYNC.err)+')':'')+'. Your progress is safe on this device and will sync again on your next change.',local:''}[SYNC.state]||'';
-    const pic=u.photo?`<img src="${esc(u.photo)}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${esc((u.name||u.email||'?')[0].toUpperCase())}</span>`;
-    return `<span class="eyebrow">./account</span><div class="acc-head">${pic}<div style="min-width:0"><b>${esc(u.name||'Signed in')}</b><div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(u.email)}</div></div></div>
-    <p class="${SYNC.state==='error'?'err':'note'}" style="margin:0">${st}</p>
-    <p class="muted" style="margin:0;font-size:14px">Your progress is saved to your account and follows you on every device where you sign in.</p>
-    <button class="btn ghost block" data-act="signout">Sign out</button>`;}
-  let action;
-  if(!SYNC.cfg)action=`<p class="note" style="margin:0">Sign-in is not set up for this copy of the app yet. Add your Firebase settings in <span class="mono">firebase-config.js</span> to turn it on.</p>`;
-  else if(!SYNC.ready)action=`<p class="err" style="margin:0">Sign-in can't be reached right now. Check your connection and reload.</p>`;
-  else action=`<button class="btn block gbtn" data-act="signin">${I.g}<span>Continue with Google</span></button>`;
-  return `<span class="eyebrow">./account</span><h3>Keep your progress everywhere</h3>
-  <p class="muted" style="margin:0">Right now your progress is saved on this device only. Sign in to sync it across your phone and computer. What you've done so far will be kept.</p>${action}<div id="acctmsg"></div>`;}
-function openAccount(){openVeil(acctSheet(),'acctsheet');}
 
 /* ---------- sessions ---------- */
 let SS=null;
@@ -2820,9 +2802,6 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('[data-ac
   case 'go':go(t.dataset.v);break;
   case 'node':openNode(NODES.find(x=>x.id===t.dataset.id));break;
   case 'closesheet':closeSheet();break;
-  case 'account':openAccount();break;
-  case 'signin':{const m=$('#acctmsg');try{await SYNC.mod.signIn();closeSheet();}catch(e){const c=(e&&e.code)||'';if(m&&!/popup-closed|cancelled/.test(c))m.innerHTML=`<p class="err" style="margin:0">Sign-in didn't work${c?' ('+esc(c)+')':''}. Check that this domain is listed in Firebase under Authentication → Settings → Authorized domains.</p>`;}break;}
-  case 'signout':clearTimeout(SYNC.timer);try{if(SYNC.state==='pending')await doPush();await SYNC.mod.signOut();}catch(e){}closeSheet();break;
   case 'start':{const n=NODES.find(x=>x.id===t.dataset.id);closeSheet();if(n.kind==='g'){VIEW='grammar';GOPEN=n.g;try{history.replaceState(null,'','#grammar')}catch(e){}render();window.scrollTo(0,0);}else startSession('v',n);break;}
   case 'speak':ev.stopPropagation();speak(t.dataset.t);break;
   case 'review':closeSheet();startSession('review');break;
@@ -2840,13 +2819,15 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('[data-ac
   case 'acc':{const i=$('#tin');if(!i)return;const s=i.selectionStart??i.value.length,e2=i.selectionEnd??i.value.length;i.value=i.value.slice(0,s)+t.dataset.c+i.value.slice(e2);i.focus();i.setSelectionRange(s+1,s+1);break;}
   case 'ml':matchTap('l',+t.dataset.i);break;
   case 'mr':matchTap('r',+t.dataset.i);break;
+  case 'export':exportBackup();break;
+  case 'import':{const f=$('#importfile');if(f){f.value='';f.click();}break;}
   case 'tsound':S.sound=!S.sound;save();render();break;
   case 'tfree':S.free=!S.free;save();render();break;
   case 'goal':S.goal=+t.dataset.g;save();render();break;
-  case 'reset':if(!RESETARM){RESETARM=true;render();setTimeout(()=>{if(RESETARM){RESETARM=false;if(VIEW==='profile')render();}},5000);}else{RESETARM=false;S=fresh();localSave();if(SYNC.user){try{await SYNC.mod.push(SYNC.user.uid,S);}catch(e){}}render();}break;
+  case 'reset':if(!RESETARM){RESETARM=true;render();setTimeout(()=>{if(RESETARM){RESETARM=false;if(VIEW==='profile')render();}},5000);}else{RESETARM=false;S=fresh();localSave();render();}break;
   }});
 document.addEventListener('input',ev=>{if(ev.target.id==='q'){WQ=ev.target.value;$('#wl').innerHTML=wordList();}});
-document.addEventListener('change',ev=>{if(ev.target.id==='uf'){WU=ev.target.value;$('#wl').innerHTML=wordList();}});
+document.addEventListener('change',ev=>{if(ev.target.id==='uf'){WU=ev.target.value;$('#wl').innerHTML=wordList();}if(ev.target.id==='importfile'&&ev.target.files[0])importBackup(ev.target.files[0]);});
 document.addEventListener('keydown',ev=>{
   if(ev.key==='Escape'){if($('.veil'))closeSheet();return;}
   if(!SS||!$('#sess'))return;const e=cur();if(!e)return;
