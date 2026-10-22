@@ -1,11 +1,10 @@
-// Paste here the config of your Firebase web app
-// (Firebase console → Project settings → General → Your apps → SDK setup and configuration → Config).
+// Firebase web app config for Mille Mots (project mille-mots-eea71).
 // These values are not secret: access to the data is protected by the Firestore rules.
 export const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000"
+  apiKey: "AIzaSyDJoMOG9OHUaoKQqItOrZnaeNJ1YhX40JM",
+  authDomain: "mille-mots-eea71.firebaseapp.com",
+  projectId: "mille-mots-eea71",
+  storageBucket: "mille-mots-eea71.firebasestorage.app",
+  messagingSenderId: "45442410411",
+  appId: "1:45442410411:web:c6a99ff8531c026d1814ee"
 };
