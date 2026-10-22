@@ -1,4 +1,4 @@
-# mille mots
+# Mille Mots
 
 A free, gamified app to learn French from **A1 to A2**: 1,500 essential words and 32 grammar lessons. No account, no ads, no tracking.
 
